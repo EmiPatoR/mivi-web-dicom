@@ -1,4 +1,4 @@
-// backend/server.ts
+// backend/server.ts - Enhanced with proper modality support
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { ensureDir } from "https://deno.land/std@0.208.0/fs/ensure_dir.ts";
 
@@ -26,6 +26,24 @@ interface WorklistItem {
   procedureStepId: string;
   stationName: string;
   location: string;
+}
+
+// Enhanced patient data structure for better tracking
+interface ParsedPatientData {
+  filename: string;
+  patientName: string;
+  patientFirstName?: string;
+  patientId: string;
+  accessionNumber: string;
+  scheduledDate: string;
+  scheduledTime: string;
+  procedureDescription: string;
+  sex: string; // This is crucial for the gender emoji
+  modality: string; // Enhanced modality support
+  stationAET?: string;
+  requestingPhysician?: string;
+  referringPhysician?: string;
+  createdAt: Date;
 }
 
 // CORS headers
@@ -77,6 +95,9 @@ ${referringPhysician ? `(0008,0090) PN [${referringPhysician}]` : ""}
 (fffe,e0dd) na (SequenceDelimitationItem)`;
 }
 
+// Store patient data in memory for quick access (in production, use a database)
+const patientDatabase = new Map<string, ParsedPatientData>();
+
 // DICOM worklist operations
 async function createWorklistFile(data: WorklistItem): Promise<string> {
   const filename = `${data.accessionNumber}.wl`;
@@ -99,6 +120,28 @@ async function createWorklistFile(data: WorklistItem): Promise<string> {
     }
 
     await Deno.remove(tempDumpFile);
+    
+    // Store patient data in memory with all fields including modality
+    const patientData: ParsedPatientData = {
+      filename,
+      patientName: `${data.patientName}, ${data.patientFirstName}${data.patientMiddleName ? ' ' + data.patientMiddleName : ''}`,
+      patientFirstName: data.patientFirstName,
+      patientId: data.patientId,
+      accessionNumber: data.accessionNumber,
+      scheduledDate: data.scheduledDate,
+      scheduledTime: data.scheduledTime,
+      procedureDescription: data.procedureDescription,
+      sex: data.sex, // Properly store the sex field
+      modality: data.modality, // Store modality for display
+      stationAET: data.stationAET,
+      requestingPhysician: data.requestingPhysician,
+      referringPhysician: data.referringPhysician,
+      createdAt: new Date()
+    };
+    
+    patientDatabase.set(filename, patientData);
+    console.log(`✅ Created patient record: ${patientData.patientName} (${patientData.sex}, ${patientData.modality})`);
+    
     return filename;
   } catch (error) {
     console.error("Error creating worklist file:", error);
@@ -106,37 +149,68 @@ async function createWorklistFile(data: WorklistItem): Promise<string> {
   }
 }
 
-async function parseWorklistFiles(): Promise<any[]> {
-  const worklists: any[] = [];
+async function parseWorklistFiles(): Promise<ParsedPatientData[]> {
+  const worklists: ParsedPatientData[] = [];
   
   try {
     for await (const entry of Deno.readDir(WORKLIST_DIR)) {
       if (entry.isFile && entry.name.endsWith('.wl')) {
-        worklists.push({
+        // First check if we have this patient in our database
+        if (patientDatabase.has(entry.name)) {
+          const storedData = patientDatabase.get(entry.name)!;
+          worklists.push(storedData);
+          continue;
+        }
+        
+        // If not in database, try to parse from filename or create default
+        // In production, you would parse the actual DICOM file here
+        const accessionNumber = entry.name.replace('.wl', '');
+        const stat = await Deno.stat(`${WORKLIST_DIR}/${entry.name}`);
+        
+        // Create a default patient record (this is a fallback)
+        const defaultPatient: ParsedPatientData = {
           filename: entry.name,
-          patientName: `Patient from ${entry.name}`,
-          patientId: entry.name.replace('.wl', ''),
-          accessionNumber: entry.name.replace('.wl', ''),
-          scheduledDate: new Date().toISOString().split('T')[0],
+          patientName: `Patient ${accessionNumber}`,
+          patientId: accessionNumber,
+          accessionNumber,
+          scheduledDate: stat.mtime?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
           scheduledTime: '1000',
-          procedureDescription: 'Ultrasound Examination'
-        });
+          procedureDescription: 'Ultrasound Examination',
+          sex: 'M', // Default to Male if unknown
+          modality: 'US', // Default to Ultrasound
+          createdAt: stat.mtime || new Date()
+        };
+        
+        // Store in database for future reference
+        patientDatabase.set(entry.name, defaultPatient);
+        worklists.push(defaultPatient);
       }
     }
   } catch (error) {
     console.error("Error reading worklist directory:", error);
   }
 
-  return worklists;
+  // Sort by creation date (newest first)
+  return worklists.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
 async function deleteWorklistFile(filename: string): Promise<void> {
   await Deno.remove(`${WORKLIST_DIR}/${filename}`);
+  // Also remove from our database
+  patientDatabase.delete(filename);
+  console.log(`🗑️ Deleted patient record: ${filename}`);
 }
 
 // Route handlers
 async function handleGetWorklists(): Promise<Response> {
   const worklists = await parseWorklistFiles();
+  console.log(`📡 Returning ${worklists.length} patient records`);
+  
+  // Log patient data for debugging
+  worklists.forEach(patient => {
+    console.log(`  - ${patient.patientName} (${patient.sex}, ${patient.modality}) - ${patient.filename}`);
+  });
+  
   return new Response(JSON.stringify(worklists), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
@@ -155,12 +229,30 @@ async function handleCreateWorklist(req: Request): Promise<Response> {
       });
     }
 
+    // Ensure sex field is properly set
+    if (!data.sex || !['M', 'F', 'O'].includes(data.sex)) {
+      data.sex = 'M'; // Default to Male if not specified or invalid
+    }
+
+    // Ensure modality field is properly set
+    if (!data.modality) {
+      data.modality = 'US'; // Default to Ultrasound if not specified
+    }
+
+    console.log(`🆕 Creating patient: ${data.patientFirstName} ${data.patientName} (${data.sex}, ${data.modality})`);
+
     const filename = await createWorklistFile(data);
     
     return new Response(JSON.stringify({ 
       success: true, 
       filename,
-      message: "Worklist item created successfully" 
+      message: "Worklist item created successfully",
+      patientData: {
+        name: `${data.patientFirstName} ${data.patientName}`,
+        sex: data.sex,
+        modality: data.modality,
+        id: data.patientId
+      }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -233,6 +325,12 @@ async function handler(req: Request): Promise<Response> {
     return await serveStaticFile("./frontend/app.css", "text/css");
   }
 
+  // Component files
+  if (pathname.startsWith("/components/") && pathname.endsWith(".js")) {
+    const componentPath = `./frontend${pathname}`;
+    return await serveStaticFile(componentPath, "application/javascript");
+  }
+
   // API Routes
   if (pathname === "/api/worklists") {
     if (req.method === "GET") {
@@ -260,7 +358,14 @@ async function handler(req: Request): Promise<Response> {
       status: "healthy",
       timestamp: new Date().toISOString(),
       worklistDir: WORKLIST_DIR,
-      port: PORT 
+      port: PORT,
+      patientsCount: patientDatabase.size,
+      patients: Array.from(patientDatabase.values()).map(p => ({
+        name: p.patientName,
+        sex: p.sex,
+        modality: p.modality,
+        filename: p.filename
+      }))
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
@@ -273,8 +378,9 @@ async function handler(req: Request): Promise<Response> {
   });
 }
 
-console.log(`🚀 DICOM Worklist Manager starting on http://localhost:${PORT}`);
+console.log(`🚀 MiVi DICOM Worklist Manager starting on http://localhost:${PORT}`);
 console.log(`📁 Worklist directory: ${WORKLIST_DIR}`);
 console.log(`🔗 Connect your ultrasound machine to query Orthanc worklists`);
+console.log(`💾 Patient database initialized (in-memory) with modality support`);
 
 await serve(handler, { port: PORT });
