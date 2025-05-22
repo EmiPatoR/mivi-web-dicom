@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DICOM Worklist Manager</title>
+    
+    <!-- React 18 -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="/app.css">
+    
+    <style>
+        /* Loading animation */
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Custom form styles */
+        .form-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* Patient card hover effect */
+        .patient-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <!-- Loading fallback -->
+        <div class="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div class="text-center">
+                <div class="loading-spinner mx-auto mb-4"></div>
+                <p class="text-gray-600">Loading DICOM Worklist Manager...</p>
+                <p class="text-sm text-gray-500 mt-2">Please wait while the application loads</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Load the React application -->
+    <script type="text/babel" src="/app.js"></script>
+    
+    <!-- Error handling -->
+    <script>
+        window.addEventListener('error', function(e) {
+            console.error('Application error:', e.error);
+            const root = document.getElementById('root');
+            if (root && root.innerHTML.includes('Loading')) {
+                root.innerHTML = `
+                    <div class="min-h-screen bg-gray-50 flex items-center justify-center">
+                        <div class="text-center max-w-md mx-auto p-6">
+                            <div class="text-red-600 text-6xl mb-4">⚠️</div>
+                            <h1 class="text-2xl font-bold text-gray-900 mb-4">Application Error</h1>
+                            <p class="text-gray-600 mb-4">Failed to load the DICOM Worklist Manager.</p>
+                            <p class="text-sm text-gray-500 mb-4">Error: ${e.error?.message || 'Unknown error'}</p>
+                            <button onclick="window.location.reload()" 
+                                class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                                Reload Application
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
