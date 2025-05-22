@@ -54,9 +54,9 @@
   --backdrop-blur-lg: blur(16px);
   
   /* Fast animation timings - optimized for responsiveness */
-  --transition-fast: 300ms;
-  --transition-normal: 400ms;
-  --transition-slow: 500ms;
+  --transition-fast: 150ms;
+  --transition-normal: 200ms;
+  --transition-slow: 300ms;
   --easing-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --easing-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
@@ -191,24 +191,51 @@ textarea:focus::placeholder {
   opacity: 0.6;
 }
 
-/* FIXED: Enhanced select dropdown styling - no more duplicate arrows */
+/* FIXED: Enhanced select dropdown styling - completely remove default arrows */
 select {
   cursor: pointer;
-  /* Single arrow, properly positioned, no repeat */
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236B7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
-  background-position: right 1rem center;
-  background-repeat: no-repeat;
-  background-size: 1.25rem 1.25rem;
-  padding-right: 3rem;
-  transition: all var(--transition-fast) var(--easing-smooth);
+  /* Completely remove all default appearances */
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
+  
+  /* Remove default arrows in all browsers */
+  background-image: none;
+  
+  /* Add our custom arrow */
+  background: var(--slate-700) url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem 1rem;
+  padding-right: 3rem;
+  transition: all var(--transition-fast) var(--easing-smooth);
 }
 
 select:focus {
-  /* Focus state with blue arrow */
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%233B82F6' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  /* Focus state with blue arrow and updated background */
+  background: var(--slate-600) url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%233B82F6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem 1rem;
+}
+
+select:hover:not(:focus) {
+  background: var(--slate-650) url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem 1rem;
+}
+
+/* Additional browser-specific overrides to ensure no default arrows */
+select::-ms-expand {
+  display: none; /* Remove IE/Edge default arrow */
+}
+
+/* Firefox specific fixes */
+@-moz-document url-prefix() {
+  select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 1rem center !important;
+    background-size: 1rem 1rem !important;
+  }
 }
 
 /* Select option styling for dark theme */
