@@ -11,19 +11,7 @@ services:
     volumes:
       - orthanc-db:/var/lib/orthanc/db
       - ./worklists:/var/lib/orthanc/worklists:rw  # Shared worklist directory
-    environment:
-      # Basic Configuration
-      - ORTHANC__NAME=MyOrthanc
-      - ORTHANC__DICOM_AET=ORTHANC
-      - ORTHANC__AUTHENTICATION_ENABLED=false
-      
-      # Worklist Configuration
-      - ORTHANC__WORKLISTS__ENABLE=true
-      - ORTHANC__WORKLISTS__DATABASE=/var/lib/orthanc/worklists
-      
-      # Security Configuration
-      - ORTHANC__DICOM_CHECK_MODALITY_HOST=false
-      - ORTHANC__REMOTE_ACCESS_ALLOWED=true
+      - ./orthanc.json:/etc/orthanc/orthanc.json:ro  # Custom configuration file
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8042/system"]

@@ -1,0 +1,22 @@
+{
+  "Name": "MyOrthanc",
+  "DicomAet": "ORTHANC",
+  "DicomPort": 4242,
+  "HttpPort": 8042,
+  "AuthenticationEnabled": false,
+  "RemoteAccessAllowed": true,
+  "DicomCheckModalityHost": false,
+  
+  "Worklists": {
+    "Enable": true,
+    "Database": "/var/lib/orthanc/worklists"
+  },
+  
+  "DicomModalities": {
+    "WS80A": ["WS80A", "172.21.0.1", 104]
+  },
+  
+  "Plugins": [
+    "/usr/share/orthanc/plugins"
+  ]
+}
