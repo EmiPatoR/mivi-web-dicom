@@ -1,6 +1,8 @@
-// backend/server.ts - Enhanced with proper modality support
+// backend/server.ts - Updated to use dcmjs instead of dump2dcm
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { ensureDir } from "https://deno.land/std@0.208.0/fs/ensure_dir.ts";
+// Import dcmjs from ESM
+import * as dcmjs from "https://esm.sh/dcmjs@0.39.0";
 
 const WORKLIST_DIR = "./worklists";
 const PORT = 8092;
@@ -38,8 +40,8 @@ interface ParsedPatientData {
   scheduledDate: string;
   scheduledTime: string;
   procedureDescription: string;
-  sex: string; // This is crucial for the gender emoji
-  modality: string; // Enhanced modality support
+  sex: string;
+  modality: string;
   stationAET?: string;
   requestingPhysician?: string;
   referringPhysician?: string;
@@ -53,75 +55,41 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type",
 };
 
-// Utility functions
-function formatDicomDate(dateStr: string): string {
-  return dateStr.replace(/-/g, "");
-}
-
-function formatDicomTime(timeStr: string): string {
-  return timeStr.replace(/:/g, "") + "00";
-}
-
-function generateDicomDump(data: WorklistItem): string {
-  const patientName = data.patientMiddleName 
-    ? `${data.patientName}^${data.patientFirstName}^${data.patientMiddleName}^^`
-    : `${data.patientName}^${data.patientFirstName}^^`;
-
-  const requestingPhysician = data.requestingPhysician || "";
-  const referringPhysician = data.referringPhysician || "";
-
-  return `# Dicom-File-Format
-
-# Dicom-Data-Set
-(0008,0050) SH [${data.accessionNumber}]
-(0010,0010) PN [${patientName}]
-(0010,0020) LO [${data.patientId}]
-(0010,0030) DA [${formatDicomDate(data.birthDate)}]
-(0010,0040) CS [${data.sex}]
-${requestingPhysician ? `(0032,1032) PN [${requestingPhysician}]` : ""}
-${referringPhysician ? `(0008,0090) PN [${referringPhysician}]` : ""}
-(0032,1060) LO [${data.procedureDescription}]
-(0040,0100) SQ
-(fffe,e000) na (Item with explicit length #=88)
-(0008,0060) CS [${data.modality}]
-(0040,0001) AE [${data.stationAET}]
-(0040,0002) DA [${formatDicomDate(data.scheduledDate)}]
-(0040,0003) TM [${formatDicomTime(data.scheduledTime)}]
-(0040,0007) LO [${data.procedureDescription}]
-(0040,0009) SH [${data.procedureStepId}]
-(0040,0010) SH [${data.stationName}]
-(0040,0011) SH [${data.location}]
-(fffe,e00d) na (ItemDelimitationItem)
-(fffe,e0dd) na (SequenceDelimitationItem)`;
-}
-
-// Store patient data in memory for quick access (in production, use a database)
+// Store patient data in memory for quick access
 const patientDatabase = new Map<string, ParsedPatientData>();
 
-// DICOM worklist operations
-async function createWorklistFile(data: WorklistItem): Promise<string> {
+/**
+ * NEW: Create DICOM worklist file using dcmjs (replaces dump2dcm)
+ * This creates proper binary DICOM files that match the Python script structure
+ */
+async function createWorklistFileWithDcmjs(data: WorklistItem): Promise<string> {
   const filename = `${data.accessionNumber}.wl`;
-  const dumpContent = generateDicomDump(data);
-  const tempDumpFile = `/tmp/${data.accessionNumber}.dump`;
-  const outputFile = `${WORKLIST_DIR}/${filename}`;
+  const outputPath = `${WORKLIST_DIR}/${filename}`;
 
   try {
-    await Deno.writeTextFile(tempDumpFile, dumpContent);
-
-    const cmd = new Deno.Command("dump2dcm", {
-      args: [tempDumpFile, outputFile],
-    });
-
-    const process = await cmd.output();
+    console.log(`🔧 Creating DICOM file with dcmjs for: ${data.patientFirstName} ${data.patientName}`);
     
-    if (!process.success) {
-      const error = new TextDecoder().decode(process.stderr);
-      throw new Error(`dump2dcm failed: ${error}`);
+    // Create the DICOM dataset with proper structure
+    const dataset = createWorklistDataset(data);
+    
+    // Create DICOM dictionary and add file meta information
+    const dicomDict = new dcmjs.data.DicomDict({});
+    dicomDict.dict = dcmjs.data.DicomMetaDictionary.denaturalizeDataset(dataset);
+    
+    // Add critical file meta information for proper DICOM Part 10 format
+    addFileMetaInformation(dicomDict);
+    
+    // Write binary DICOM file
+    const dicomBuffer = dicomDict.write();
+    await Deno.writeFile(outputPath, new Uint8Array(dicomBuffer));
+    
+    // Validate the created file
+    const isValid = await validateWorklistFile(outputPath);
+    if (!isValid) {
+      throw new Error("Created DICOM file failed validation");
     }
-
-    await Deno.remove(tempDumpFile);
     
-    // Store patient data in memory with all fields including modality
+    // Store patient data in memory
     const patientData: ParsedPatientData = {
       filename,
       patientName: `${data.patientName}, ${data.patientFirstName}${data.patientMiddleName ? ' ' + data.patientMiddleName : ''}`,
@@ -131,8 +99,8 @@ async function createWorklistFile(data: WorklistItem): Promise<string> {
       scheduledDate: data.scheduledDate,
       scheduledTime: data.scheduledTime,
       procedureDescription: data.procedureDescription,
-      sex: data.sex, // Properly store the sex field
-      modality: data.modality, // Store modality for display
+      sex: data.sex,
+      modality: data.modality,
       stationAET: data.stationAET,
       requestingPhysician: data.requestingPhysician,
       referringPhysician: data.referringPhysician,
@@ -140,12 +108,145 @@ async function createWorklistFile(data: WorklistItem): Promise<string> {
     };
     
     patientDatabase.set(filename, patientData);
-    console.log(`✅ Created patient record: ${patientData.patientName} (${patientData.sex}, ${patientData.modality})`);
+    console.log(`✅ Successfully created DICOM worklist: ${filename}`);
     
     return filename;
+    
   } catch (error) {
-    console.error("Error creating worklist file:", error);
+    console.error("❌ Error creating DICOM worklist file:", error);
     throw error;
+  }
+}
+
+/**
+ * Creates the DICOM dataset with all required tags for modality worklist
+ * This structure matches the working Python script
+ */
+function createWorklistDataset(data: WorklistItem) {
+  // Format patient name properly for DICOM (Family^Given^Middle^^)
+  const patientName = data.patientMiddleName 
+    ? `${data.patientName}^${data.patientFirstName}^${data.patientMiddleName}^^`
+    : `${data.patientName}^${data.patientFirstName}^^`;
+  
+  // Format dates and times for DICOM (YYYYMMDD and HHMMSS)
+  const formattedBirthDate = data.birthDate.replace(/-/g, "");
+  const formattedScheduledDate = data.scheduledDate.replace(/-/g, "");
+  const formattedScheduledTime = data.scheduledTime.replace(/:/g, "") + "00";
+  
+  // Generate unique UIDs (required for DICOM)
+  const studyInstanceUID = dcmjs.data.DicomMetaDictionary.uid();
+  
+  // Create the dataset following DICOM Modality Worklist specification
+  const dataset: any = {
+    // Patient Level (Level 0)
+    AccessionNumber: data.accessionNumber,
+    PatientName: patientName,
+    PatientID: data.patientId,
+    PatientBirthDate: formattedBirthDate,
+    PatientSex: data.sex,
+    
+    // Study/Procedure Level
+    StudyInstanceUID: studyInstanceUID,
+    RequestedProcedureDescription: data.procedureDescription,
+    SpecificCharacterSet: "ISO_IR 100",
+    
+    // Optional physician information
+    ...(data.referringPhysician && { ReferringPhysicianName: data.referringPhysician }),
+    ...(data.requestingPhysician && { RequestingPhysician: data.requestingPhysician }),
+    
+    // CRITICAL: Scheduled Procedure Step Sequence (0040,0100)
+    // This is what modalities query for - must be present and properly structured
+    ScheduledProcedureStepSequence: [{
+      ScheduledStationAETitle: data.stationAET, // Must match modality configuration
+      Modality: data.modality, // CRITICAL: Must be correct (US, CT, MR, etc.)
+      ScheduledProcedureStepStartDate: formattedScheduledDate,
+      ScheduledProcedureStepStartTime: formattedScheduledTime,
+      ScheduledProcedureStepID: data.procedureStepId,
+      ScheduledProcedureStepDescription: data.procedureDescription,
+      ScheduledStationName: data.stationName,
+      ScheduledProcedureStepLocation: data.location,
+      ...(data.requestingPhysician && { 
+        ScheduledPerformingPhysicianName: data.requestingPhysician 
+      })
+    }]
+  };
+  
+  console.log(`📝 Created dataset for ${patientName}, Modality: ${data.modality}, AET: ${data.stationAET}`);
+  return dataset;
+}
+
+/**
+ * Adds proper file meta information to ensure DICOM Part 10 compliance
+ * This is critical for modality compatibility
+ */
+function addFileMetaInformation(dicomDict: any) {
+  const sopInstanceUID = dcmjs.data.DicomMetaDictionary.uid();
+  
+  // Required DICOM Part 10 file meta information
+  dicomDict.upsertTag("00020001", "OB", new Uint8Array([0, 1])); // File Meta Information Version
+  dicomDict.upsertTag("00020002", "UI", "1.2.840.10008.5.1.4.31"); // Media Storage SOP Class UID (Modality Worklist)
+  dicomDict.upsertTag("00020003", "UI", sopInstanceUID); // Media Storage SOP Instance UID
+  dicomDict.upsertTag("00020010", "UI", "1.2.840.10008.1.2.1"); // Transfer Syntax UID (Explicit VR Little Endian)
+  dicomDict.upsertTag("00020012", "UI", "1.2.826.0.1.3680043.8.498.1"); // Implementation Class UID
+  dicomDict.upsertTag("00020013", "SH", "MiVi-DCMJS-1.0"); // Implementation Version Name
+  
+  console.log(`🔧 Added file meta information with SOP Instance UID: ${sopInstanceUID}`);
+}
+
+/**
+ * Validates that the created DICOM file has all required tags
+ */
+async function validateWorklistFile(filePath: string): Promise<boolean> {
+  try {
+    const fileBuffer = await Deno.readFile(filePath);
+    const dicomDict = dcmjs.data.DicomMessage.readFile(fileBuffer.buffer);
+    const dataset = dcmjs.data.DicomMetaDictionary.naturalizeDataset(dicomDict.dict);
+    
+    // Check for required worklist tags
+    const requiredTags = [
+      'AccessionNumber',
+      'PatientName', 
+      'PatientID',
+      'PatientSex',
+      'ScheduledProcedureStepSequence'
+    ];
+    
+    for (const tag of requiredTags) {
+      if (!dataset[tag]) {
+        console.warn(`⚠️ Missing required tag: ${tag}`);
+        return false;
+      }
+    }
+    
+    // Validate scheduled procedure step sequence
+    if (!dataset.ScheduledProcedureStepSequence || 
+        !Array.isArray(dataset.ScheduledProcedureStepSequence) ||
+        dataset.ScheduledProcedureStepSequence.length === 0) {
+      console.warn("⚠️ Invalid ScheduledProcedureStepSequence");
+      return false;
+    }
+    
+    const stepSequence = dataset.ScheduledProcedureStepSequence[0];
+    const requiredStepTags = [
+      'ScheduledStationAETitle',
+      'Modality', 
+      'ScheduledProcedureStepStartDate',
+      'ScheduledProcedureStepStartTime'
+    ];
+    
+    for (const tag of requiredStepTags) {
+      if (!stepSequence[tag]) {
+        console.warn(`⚠️ Missing required step tag: ${tag}`);
+        return false;
+      }
+    }
+    
+    console.log(`✅ DICOM validation successful - Modality: ${stepSequence.Modality}, AET: ${stepSequence.ScheduledStationAETitle}`);
+    return true;
+    
+  } catch (error) {
+    console.error("❌ Error validating DICOM file:", error);
+    return false;
   }
 }
 
@@ -162,28 +263,58 @@ async function parseWorklistFiles(): Promise<ParsedPatientData[]> {
           continue;
         }
         
-        // If not in database, try to parse from filename or create default
-        // In production, you would parse the actual DICOM file here
-        const accessionNumber = entry.name.replace('.wl', '');
-        const stat = await Deno.stat(`${WORKLIST_DIR}/${entry.name}`);
-        
-        // Create a default patient record (this is a fallback)
-        const defaultPatient: ParsedPatientData = {
-          filename: entry.name,
-          patientName: `Patient ${accessionNumber}`,
-          patientId: accessionNumber,
-          accessionNumber,
-          scheduledDate: stat.mtime?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
-          scheduledTime: '1000',
-          procedureDescription: 'Ultrasound Examination',
-          sex: 'M', // Default to Male if unknown
-          modality: 'US', // Default to Ultrasound
-          createdAt: stat.mtime || new Date()
-        };
-        
-        // Store in database for future reference
-        patientDatabase.set(entry.name, defaultPatient);
-        worklists.push(defaultPatient);
+        // Try to parse the DICOM file to extract patient data
+        try {
+          const filePath = `${WORKLIST_DIR}/${entry.name}`;
+          const fileBuffer = await Deno.readFile(filePath);
+          const dicomDict = dcmjs.data.DicomMessage.readFile(fileBuffer.buffer);
+          const dataset = dcmjs.data.DicomMetaDictionary.naturalizeDataset(dicomDict.dict);
+          
+          const stat = await Deno.stat(filePath);
+          
+          const parsedPatient: ParsedPatientData = {
+            filename: entry.name,
+            patientName: dataset.PatientName || `Patient ${entry.name}`,
+            patientFirstName: dataset.PatientName?.split('^')[1] || '',
+            patientId: dataset.PatientID || entry.name.replace('.wl', ''),
+            accessionNumber: dataset.AccessionNumber || entry.name.replace('.wl', ''),
+            scheduledDate: dataset.ScheduledProcedureStepSequence?.[0]?.ScheduledProcedureStepStartDate || 
+                          stat.mtime?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+            scheduledTime: dataset.ScheduledProcedureStepSequence?.[0]?.ScheduledProcedureStepStartTime || '1000',
+            procedureDescription: dataset.RequestedProcedureDescription || 'Ultrasound Examination',
+            sex: dataset.PatientSex || 'M',
+            modality: dataset.ScheduledProcedureStepSequence?.[0]?.Modality || 'US',
+            stationAET: dataset.ScheduledProcedureStepSequence?.[0]?.ScheduledStationAETitle,
+            requestingPhysician: dataset.RequestingPhysician,
+            referringPhysician: dataset.ReferringPhysicianName,
+            createdAt: stat.mtime || new Date()
+          };
+          
+          // Store in database for future reference
+          patientDatabase.set(entry.name, parsedPatient);
+          worklists.push(parsedPatient);
+          
+        } catch (parseError) {
+          console.warn(`⚠️ Could not parse DICOM file ${entry.name}:`, parseError);
+          
+          // Fallback to basic info
+          const stat = await Deno.stat(`${WORKLIST_DIR}/${entry.name}`);
+          const fallbackPatient: ParsedPatientData = {
+            filename: entry.name,
+            patientName: `Patient ${entry.name.replace('.wl', '')}`,
+            patientId: entry.name.replace('.wl', ''),
+            accessionNumber: entry.name.replace('.wl', ''),
+            scheduledDate: stat.mtime?.toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
+            scheduledTime: '1000',
+            procedureDescription: 'Ultrasound Examination',
+            sex: 'M',
+            modality: 'US',
+            createdAt: stat.mtime || new Date()
+          };
+          
+          patientDatabase.set(entry.name, fallbackPatient);
+          worklists.push(fallbackPatient);
+        }
       }
     }
   } catch (error) {
@@ -196,7 +327,6 @@ async function parseWorklistFiles(): Promise<ParsedPatientData[]> {
 
 async function deleteWorklistFile(filename: string): Promise<void> {
   await Deno.remove(`${WORKLIST_DIR}/${filename}`);
-  // Also remove from our database
   patientDatabase.delete(filename);
   console.log(`🗑️ Deleted patient record: ${filename}`);
 }
@@ -206,7 +336,6 @@ async function handleGetWorklists(): Promise<Response> {
   const worklists = await parseWorklistFiles();
   console.log(`📡 Returning ${worklists.length} patient records`);
   
-  // Log patient data for debugging
   worklists.forEach(patient => {
     console.log(`  - ${patient.patientName} (${patient.sex}, ${patient.modality}) - ${patient.filename}`);
   });
@@ -231,35 +360,43 @@ async function handleCreateWorklist(req: Request): Promise<Response> {
 
     // Ensure sex field is properly set
     if (!data.sex || !['M', 'F', 'O'].includes(data.sex)) {
-      data.sex = 'M'; // Default to Male if not specified or invalid
+      data.sex = 'M';
     }
 
     // Ensure modality field is properly set
     if (!data.modality) {
-      data.modality = 'US'; // Default to Ultrasound if not specified
+      data.modality = 'US';
     }
 
-    console.log(`🆕 Creating patient: ${data.patientFirstName} ${data.patientName} (${data.sex}, ${data.modality})`);
+    // Set default station AET if not provided
+    if (!data.stationAET) {
+      data.stationAET = 'WS80A'; // Default for Samsung WS80A
+    }
 
-    const filename = await createWorklistFile(data);
+    console.log(`🆕 Creating DICOM worklist for: ${data.patientFirstName} ${data.patientName} (${data.sex}, ${data.modality}) -> ${data.stationAET}`);
+
+    // Use the new dcmjs-based creation method
+    const filename = await createWorklistFileWithDcmjs(data);
     
     return new Response(JSON.stringify({ 
       success: true, 
       filename,
-      message: "Worklist item created successfully",
+      message: "DICOM worklist created successfully with dcmjs",
       patientData: {
         name: `${data.patientFirstName} ${data.patientName}`,
         sex: data.sex,
         modality: data.modality,
+        stationAET: data.stationAET,
         id: data.patientId
       }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+    
   } catch (error) {
     console.error("Error creating worklist:", error);
     return new Response(JSON.stringify({ 
-      error: "Failed to create worklist item",
+      error: "Failed to create DICOM worklist",
       details: error.message 
     }), {
       status: 500,
@@ -359,11 +496,13 @@ async function handler(req: Request): Promise<Response> {
       timestamp: new Date().toISOString(),
       worklistDir: WORKLIST_DIR,
       port: PORT,
+      generator: "dcmjs-1.0",
       patientsCount: patientDatabase.size,
       patients: Array.from(patientDatabase.values()).map(p => ({
         name: p.patientName,
         sex: p.sex,
         modality: p.modality,
+        stationAET: p.stationAET,
         filename: p.filename
       }))
     }), {
@@ -381,6 +520,7 @@ async function handler(req: Request): Promise<Response> {
 console.log(`🚀 MiVi DICOM Worklist Manager starting on http://localhost:${PORT}`);
 console.log(`📁 Worklist directory: ${WORKLIST_DIR}`);
 console.log(`🔗 Connect your ultrasound machine to query Orthanc worklists`);
-console.log(`💾 Patient database initialized (in-memory) with modality support`);
+console.log(`💾 Using dcmjs for DICOM generation (no dump2dcm dependency)`);
+console.log(`🏥 Compatible with Samsung WS80A and other modalities`);
 
 await serve(handler, { port: PORT });
