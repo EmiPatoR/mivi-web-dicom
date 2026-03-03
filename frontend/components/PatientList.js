@@ -1,40 +1,60 @@
-// frontend/components/PatientList.js
 const PatientList = ({ patients, onDelete, formatDate, formatTime }) => {
   if (patients.length === 0) {
-    return React.createElement('div', {
-      className: 'text-center py-20 bg-gradient-to-br from-slate-900 to-slate-800'
-    },
-      React.createElement('div', {
-        className: 'bg-slate-800/50 backdrop-blur-sm w-32 h-32 rounded-full flex items-center justify-center mx-auto mb-8 border-2 border-slate-700/50 shadow-lg'
+    return React.createElement(
+      "div",
+      {
+        className: "px-6 py-16 sm:px-8",
       },
-        React.createElement('span', {
-          className: 'text-6xl'
-        }, '📋')
+      React.createElement(
+        "div",
+        {
+          className:
+            "mx-auto max-w-xl rounded-2xl border border-dashed border-slate-600 bg-slate-900/45 px-8 py-12 text-center",
+        },
+        React.createElement(
+          "div",
+          {
+            className: "mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-slate-800 text-cyan-300",
+          },
+          React.createElement(Icon, { name: "clipboard", size: 18 }),
+        ),
+        React.createElement(
+          "p",
+          {
+            className: "text-xl font-semibold text-slate-100",
+          },
+          "No patients scheduled",
+        ),
+        React.createElement(
+          "p",
+          {
+            className: "mt-2 text-sm leading-relaxed text-slate-400",
+          },
+          "Create the first worklist entry to start routing studies to DICOM.",
+        ),
       ),
-      React.createElement('h3', {
-        className: 'text-2xl font-bold text-slate-200 mb-4'
-      }, 'No patients scheduled'),
-      React.createElement('p', {
-        className: 'text-slate-400 max-w-lg mx-auto text-lg leading-relaxed'
-      }, 'Get started by creating your first patient worklist entry. All patient data will be converted to DICOM format automatically.')
     );
   }
 
-  return React.createElement('div', {
-    className: 'p-8 bg-gradient-to-br from-slate-900 to-slate-800 min-h-[400px]'
-  },
-    React.createElement('div', {
-      className: 'max-w-7xl mx-auto space-y-6'
-    }, 
-      ...patients.map((patient, index) => 
+  return React.createElement(
+    "div",
+    {
+      className: "px-6 py-6 sm:px-8",
+    },
+    React.createElement(
+      "div",
+      {
+        className: "mx-auto max-w-7xl space-y-3",
+      },
+      ...patients.map((patient, index) =>
         React.createElement(PatientCard, {
-          key: `patient-${index}`,
+          key: patient.filename || `${patient.patientId || "patient"}-${index}`,
           patient,
           onDelete,
           formatDate,
-          formatTime
+          formatTime,
         })
-      )
-    )
+      ),
+    ),
   );
 };

@@ -1,128 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MiVi DICOM Worklist Manager</title>
-    
+
     <!-- React 18 -->
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    
+
     <!-- Babel for JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Enhanced styles with fast animations -->
     <link rel="stylesheet" href="/app.css">
-    
+
     <!-- Preload hint for better performance -->
     <link rel="preload" href="/components/LoadingScreen.js" as="script">
+    <link rel="preload" href="/components/Icons.js" as="script">
     <link rel="preload" href="/components/Header.js" as="script">
     <link rel="preload" href="/components/ActionBar.js" as="script">
+    <link rel="preload" href="/components/FieldFrame.js" as="script">
+    <link rel="preload" href="/components/SelectField.js" as="script">
+    <link rel="preload" href="/components/DateField.js" as="script">
+    <link rel="preload" href="/components/TimeField.js" as="script">
     <link rel="preload" href="/components/FormInput.js" as="script">
     <link rel="preload" href="/components/PatientForm.js" as="script">
     <link rel="preload" href="/components/PatientCard.js" as="script">
     <link rel="preload" href="/components/PatientList.js" as="script">
     <link rel="preload" href="/components/Notification.js" as="script">
-    
+    <link rel="preload" href="/components/ConfirmModal.js" as="script">
+
     <style>
-        /* Immediate loading styles to prevent flash */
-        .loading-fallback {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e40af 100%);
-            color: #f1f5f9;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      .loading-fallback {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e40af 100%);
+        color: #f1f5f9;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+
+      .loading-content {
+        text-align: center;
+        background: rgba(30, 41, 59, 0.8);
+        backdrop-filter: blur(10px);
+        padding: 3rem;
+        border-radius: 1.5rem;
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+      }
+
+      .loading-spinner-fallback {
+        width: 3rem;
+        height: 3rem;
+        border: 4px solid #334155;
+        border-top: 4px solid #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1.5rem;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
         }
-        
-        .loading-content {
-            text-align: center;
-            background: rgba(30, 41, 59, 0.8);
-            backdrop-filter: blur(10px);
-            padding: 3rem;
-            border-radius: 1.5rem;
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+        100% {
+          transform: rotate(360deg);
         }
-        
-        .loading-spinner-fallback {
-            width: 3rem;
-            height: 3rem;
-            border: 4px solid #334155;
-            border-top: 4px solid #3b82f6;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1.5rem;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .loading-text {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: #f1f5f9;
-        }
-        
-        .loading-subtitle {
-            font-size: 0.875rem;
-            color: #94a3b8;
-        }
+      }
+
+      .loading-text {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #f1f5f9;
+      }
+
+      .loading-subtitle {
+        font-size: 0.875rem;
+        color: #94a3b8;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div id="root">
-        <!-- Enhanced loading fallback -->
-        <div class="loading-fallback">
-            <div class="loading-content">
-                <div class="loading-spinner-fallback"></div>
-                <p class="loading-text">Loading MiVi Worklist Manager...</p>
-                <p class="loading-subtitle">Medical Imaging Virtual Intelligence</p>
-                <p style="font-size: 0.75rem; color: #64748b; margin-top: 1rem;">
-                    Professional DICOM workflow management system
-                </p>
-            </div>
+      <div class="loading-fallback">
+        <div class="loading-content">
+          <div class="loading-spinner-fallback"></div>
+          <p class="loading-text">Loading MiVi Worklist Manager...</p>
+          <p class="loading-subtitle">Medical Imaging Virtual Intelligence</p>
+          <p style="font-size: 0.75rem; color: #64748b; margin-top: 1rem">
+            Professional DICOM workflow management system
+          </p>
         </div>
+      </div>
     </div>
-    
+
     <!-- Load React components in order -->
-    <!-- Core components first -->
+    <script type="text/babel" src="/components/Icons.js"></script>
     <script type="text/babel" src="/components/LoadingScreen.js"></script>
     <script type="text/babel" src="/components/Notification.js"></script>
     <script type="text/babel" src="/components/Header.js"></script>
     <script type="text/babel" src="/components/ActionBar.js"></script>
-    
-    <!-- Form components -->
+
+    <script type="text/babel" src="/components/FieldFrame.js"></script>
+    <script type="text/babel" src="/components/SelectField.js"></script>
+    <script type="text/babel" src="/components/DateField.js"></script>
+    <script type="text/babel" src="/components/TimeField.js"></script>
     <script type="text/babel" src="/components/FormInput.js"></script>
     <script type="text/babel" src="/components/PatientForm.js"></script>
-    
-    <!-- Patient display components -->
+
     <script type="text/babel" src="/components/PatientCard.js"></script>
     <script type="text/babel" src="/components/PatientList.js"></script>
-    
-    <!-- Main application last -->
+    <script type="text/babel" src="/components/ConfirmModal.js"></script>
+
     <script type="text/babel" src="/app.js"></script>
-    
-    <!-- Enhanced error handling -->
+
     <script>
-        let errorCount = 0;
-        const maxErrors = 3;
-        
-        window.addEventListener('error', function(e) {
-            errorCount++;
-            console.error('Application error:', e.error);
-            
-            const root = document.getElementById('root');
-            if (root && (root.innerHTML.includes('Loading') || errorCount >= maxErrors)) {
-                root.innerHTML = `
+      let errorCount = 0;
+      const maxErrors = 3;
+
+      window.addEventListener("error", function (e) {
+        errorCount++;
+        console.error("Application error:", e.error);
+
+        const root = document.getElementById("root");
+        if (root && (root.innerHTML.includes("Loading") || errorCount >= maxErrors)) {
+          root.innerHTML = `
                     <div class="loading-fallback">
                         <div class="loading-content">
                             <div style="font-size: 4rem; margin-bottom: 1.5rem;">⚠️</div>
@@ -133,7 +142,7 @@
                                 Failed to load the DICOM Worklist Manager. This could be due to a network issue or missing components.
                             </p>
                             <p style="font-size: 0.875rem; color: #64748b; margin-bottom: 2rem; font-family: monospace; background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 0.5rem;">
-                                Error: ${e.error?.message || 'Unknown error'}
+                                Error: ${e.error?.message || "Unknown error"}
                             </p>
                             <button onclick="window.location.reload()" 
                                 style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; padding: 0.75rem 1.5rem; border: none; border-radius: 0.75rem; font-weight: 600; cursor: pointer; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.6); transition: all 0.2s;">
@@ -147,31 +156,21 @@
                         </div>
                     </div>
                 `;
-            }
-        });
-        
-        // Performance monitoring
-        window.addEventListener('load', function() {
-            console.log('✅ All components loaded successfully');
-            
-            // Optional: Report performance metrics
-            if ('performance' in window) {
-                const perfData = performance.getEntriesByType('navigation')[0];
-                if (perfData) {
-                    console.log(`📊 Load time: ${Math.round(perfData.loadEventEnd - perfData.fetchStart)}ms`);
-                }
-            }
-        });
-        
-        // Service Worker registration for PWA capabilities (optional)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                // Uncomment to enable service worker
-                // navigator.serviceWorker.register('/sw.js')
-                //     .then(reg => console.log('SW registered'))
-                //     .catch(err => console.log('SW registration failed'));
-            });
         }
+      });
+
+      window.addEventListener("load", function () {
+        console.log("All components loaded successfully");
+
+        if ("performance" in window) {
+          const perfData = performance.getEntriesByType("navigation")[0];
+          if (perfData) {
+            console.log(
+              `Load time: ${Math.round(perfData.loadEventEnd - perfData.fetchStart)}ms`,
+            );
+          }
+        }
+      });
     </script>
-</body>
+  </body>
 </html>

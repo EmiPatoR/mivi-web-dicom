@@ -14,7 +14,7 @@ A web application for managing DICOM worklists for ultrasound machines, built wi
 ## Prerequisites
 
 - Deno runtime
-- DCMTK tools (for dump2dcm)
+- PostgreSQL (optional, for persistence)
 - Docker & Docker Compose (optional)
 
 ## Quick Start
@@ -25,18 +25,20 @@ A web application for managing DICOM worklists for ultrasound machines, built wi
    ```bash
    # Install Deno
    curl -fsSL https://deno.land/x/install/install.sh | sh
-   
-   # Install DCMTK
-   sudo pacman -S dcmtk  # Arch Linux
-   sudo apt-get install dcmtk  # Ubuntu/Debian
    ```
 
 2. Start the application:
    ```bash
-   ./scripts/start.sh
+   deno task dev
    ```
 
-3. Open http://localhost:8080 in your browser
+3. Optional: enable PostgreSQL persistence
+   ```bash
+   export DATABASE_URL=postgresql://user:pass@localhost:5432/worklist
+   deno task db:migrate
+   ```
+
+4. Open http://localhost:8080 in your browser
 
 ### Method 2: Docker
 
@@ -75,7 +77,12 @@ A web application for managing DICOM worklists for ultrasound machines, built wi
 ```
 dicom-worklist-manager/
 ├── backend/
-│   └── server.ts          # Deno server
+│   ├── main.ts            # Deno entrypoint
+│   ├── server.ts          # HTTP router
+│   ├── db/                # Drizzle schema + migrations
+│   ├── services/          # Business logic
+│   ├── dicom/             # DICOM worklist generation
+│   └── http/              # Request handlers
 ├── frontend/
 │   ├── App.jsx           # React component
 │   └── index.html        # HTML template
@@ -96,14 +103,32 @@ dicom-worklist-manager/
 ## Development
 
 The application uses:
+
 - **Frontend**: React with Tailwind CSS
 - **Backend**: Deno with TypeScript
-- **DICOM**: DCMTK tools for binary conversion
+- **DICOM**: dcmjs for raw worklist generation
+- **Database**: Drizzle ORM with migrations
+
+### Database & Migrations
+
+1. Generate migrations from schema:
+   ```bash
+   deno task db:generate
+   ```
+2. Apply migrations:
+   ```bash
+   deno task db:migrate
+   ```
+3. Optional auto-migrate on startup:
+   ```bash
+   export AUTO_MIGRATE=true
+   deno task dev
+   ```
+
 - **Integration**: Orthanc DICOM server
 
 ## Troubleshooting
 
-1. **dump2dcm not found**: Install DCMTK tools
-2. **Permission denied**: Check file permissions in worklists directory
-3. **Port conflicts**: Ensure ports 8080 and 8042 are available
-4. **Ultrasound not connecting**: Verify network configuration and AE titles
+1. **Permission denied**: Check file permissions in worklists directory
+2. **Port conflicts**: Ensure ports 8080 and 8042 are available
+3. **Ultrasound not connecting**: Verify network configuration and AE titles

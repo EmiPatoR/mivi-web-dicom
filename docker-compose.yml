@@ -1,49 +1,52 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  # Orthanc DICOM Server
+  postgres:
+    image: postgres:15
+    container_name: worklist-db
+    environment:
+      - POSTGRES_DB=worklist
+      - POSTGRES_USER=worklist
+      - POSTGRES_PASSWORD=worklist123
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
   orthanc:
     image: orthancteam/orthanc:latest
     container_name: orthanc
     ports:
-      - "8042:8042"  # Orthanc web interface
-      - "4242:4242"  # DICOM port
+      - "8042:8042" # Orthanc web interface
+      - "4242:4242" # DICOM port
     volumes:
       - orthanc-db:/var/lib/orthanc/db
-      - ./worklists:/var/lib/orthanc/worklists:rw  # Shared worklist directory
-      - ./orthanc.json:/etc/orthanc/orthanc.json:ro  # Custom configuration file
+      - ./worklists:/var/lib/orthanc/worklists # Shared worklist directory
+    environment:
+      - ORTHANC__NAME=MyOrthanc
+      - ORTHANC__DICOM_AET=ORTHANC
+      - ORTHANC__AUTHENTICATION_ENABLED=false
+      - ORTHANC__WORKLISTS__ENABLE=true
+      - ORTHANC__WORKLISTS__DATABASE=/var/lib/orthanc/worklists
+      - ORTHANC__DICOM_CHECK_MODALITY_HOST=false
+      - ORTHANC__DICOM_MODALITIES={"WS80A":["WS80A","192.168.1.22",104]}
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8042/system"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
 
-  # DICOM Worklist Manager
   worklist-manager:
-    build: 
-      context: .
-      dockerfile: Dockerfile
+    build: .
     container_name: worklist-manager
     ports:
-      - "8092:8092"  # Worklist manager web interface
+      - "8080:8080" # Worklist manager web interface
     volumes:
-      - ./worklists:/app/worklists:rw  # Shared worklist directory
+      - ./frontend:/app/frontend # Live frontend edits without rebuild
+      - ./worklists:/app/worklists # Shared worklist directory
     environment:
-      - DENO_ENV=production
-      - PORT=8092
-      - WORKLIST_DIR=/app/worklists
+      - DATABASE_URL=postgresql://worklist:worklist123@postgres:5432/worklist
+      - AUTO_MIGRATE=true
     depends_on:
       - orthanc
+      - postgres
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8092/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
 
 volumes:
   orthanc-db:
-    driver: local
+  postgres-data:

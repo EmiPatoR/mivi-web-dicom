@@ -1,27 +1,36 @@
-// frontend/components/LoadingScreen.js
 const LoadingScreen = () => {
-  return React.createElement('div', {
-    className: 'min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 flex items-center justify-center'
-  }, 
-    React.createElement('div', {
-      className: 'text-center bg-slate-800/80 backdrop-blur-sm p-12 rounded-2xl shadow-2xl border border-slate-700/50'
-    }, 
-      React.createElement('div', {
-        className: 'relative w-16 h-16 mx-auto mb-6'
+  return React.createElement(
+    "div",
+    {
+      className:
+        "min-h-screen bg-[radial-gradient(circle_at_16%_20%,rgba(47,192,178,0.18),transparent_42%),radial-gradient(circle_at_88%_0%,rgba(55,143,197,0.2),transparent_30%),linear-gradient(150deg,#071116,#0a1a21_52%,#0d2732)] flex items-center justify-center px-6",
+    },
+    React.createElement(
+      "div",
+      {
+        className:
+          "w-full max-w-md rounded-2xl border border-slate-700/70 bg-slate-900/80 p-8 text-center shadow-2xl backdrop-blur-xl",
       },
-        React.createElement('div', {
-          className: 'absolute inset-0 border-4 border-blue-500/30 rounded-full'
-        }),
-        React.createElement('div', {
-          className: 'absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin'
-        })
+      React.createElement(
+        "div",
+        {
+          className: "mx-auto mb-5 h-10 w-10 animate-spin rounded-full border-2 border-cyan-400/30 border-t-cyan-300",
+        },
       ),
-      React.createElement('p', {
-        className: 'text-slate-100 text-xl font-semibold mb-2'
-      }, 'Loading MiVi Worklist Manager...'),
-      React.createElement('p', {
-        className: 'text-slate-400 text-sm'
-      }, 'Medical Imaging Virtual Intelligence')
-    )
+      React.createElement(
+        "p",
+        {
+          className: "text-lg font-semibold text-slate-100",
+        },
+        "Loading MiVi Worklist",
+      ),
+      React.createElement(
+        "p",
+        {
+          className: "mt-2 text-sm text-slate-400",
+        },
+        "Preparing patient scheduling data",
+      ),
+    ),
   );
 };

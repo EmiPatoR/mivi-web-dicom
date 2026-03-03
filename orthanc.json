@@ -6,16 +6,16 @@
   "AuthenticationEnabled": false,
   "RemoteAccessAllowed": true,
   "DicomCheckModalityHost": false,
-  
+
   "Worklists": {
     "Enable": true,
     "Database": "/var/lib/orthanc/worklists"
   },
-  
+
   "DicomModalities": {
     "WS80A": ["WS80A", "192.168.1.22", 104]
   },
-  
+
   "Plugins": [
     "/usr/share/orthanc/plugins"
   ]

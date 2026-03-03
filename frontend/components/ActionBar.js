@@ -1,33 +1,46 @@
-// frontend/components/ActionBar.js
 const ActionBar = ({ patientCount, showForm, onToggleForm }) => {
-  return React.createElement('div', {
-    className: 'bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50 px-8 py-6'
-  },
-    React.createElement('div', {
-      className: 'flex items-center justify-between max-w-7xl mx-auto'
+  return React.createElement(
+    "div",
+    {
+      className: "border-b border-slate-700/60 bg-slate-950/35 px-6 py-4 sm:px-8",
     },
-      React.createElement('div', {
-        className: 'flex items-center space-x-6'
+    React.createElement(
+      "div",
+      {
+        className: "mx-auto flex max-w-7xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
       },
-        React.createElement('h2', {
-          className: 'text-2xl font-bold text-slate-100'
-        }, 'Patient Worklist'),
-        React.createElement('div', {
-          className: 'bg-blue-900/60 text-blue-200 px-4 py-2 rounded-full text-sm font-semibold border border-blue-700/50 backdrop-blur-sm'
-        }, `${patientCount} patient${patientCount !== 1 ? 's' : ''}`)
+      React.createElement(
+        "div",
+        null,
+        React.createElement(
+          "h2",
+          {
+            className: "inline-flex items-center gap-2 text-lg font-semibold tracking-tight text-slate-100 sm:text-xl",
+          },
+          React.createElement(Icon, { name: "clipboard", size: 16, className: "text-cyan-300" }),
+          "Today's Worklist",
+        ),
+        React.createElement(
+          "p",
+          {
+            className: "text-sm text-slate-400",
+          },
+          `${patientCount} scheduled ${patientCount === 1 ? "exam" : "exams"}`,
+        ),
       ),
-      React.createElement('button', {
-        onClick: onToggleForm,
-        className: `${showForm 
-          ? 'bg-slate-600/80 hover:bg-slate-600 border-slate-500' 
-          : 'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 border-emerald-500'
-        } text-white px-8 py-4 rounded-xl font-semibold shadow-lg transform transition-all duration-200 hover:scale-105 flex items-center space-x-3 border backdrop-blur-sm`
-      },
-        React.createElement('span', {
-          className: 'text-xl'
-        }, showForm ? '❌' : '➕'),
-        React.createElement('span', {}, showForm ? 'Cancel' : 'New Patient')
-      )
-    )
+      React.createElement(
+        "button",
+        {
+          onClick: onToggleForm,
+          className: `${
+            showForm
+              ? "border-slate-600 bg-slate-800 text-slate-200 hover:border-slate-500 hover:bg-slate-700"
+              : "border-cyan-500/50 bg-cyan-500 text-slate-950 hover:bg-cyan-400"
+          } inline-flex items-center justify-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-semibold transition-colors duration-150`,
+        },
+        React.createElement(Icon, { name: showForm ? "x" : "plus", size: 14 }),
+        showForm ? "Close Form" : "Schedule Patient",
+      ),
+    ),
   );
 };

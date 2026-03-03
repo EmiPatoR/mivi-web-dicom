@@ -1,23 +1,49 @@
-// frontend/components/Notification.js
-const Notification = ({ notification }) => {
+const Notification = ({ notification, drawerOpen = false }) => {
   if (!notification) return null;
 
-  return React.createElement('div', {
-    className: `fixed top-6 right-6 z-50 p-6 rounded-2xl shadow-2xl border-l-4 ${
-      notification.type === 'success' 
-        ? 'bg-green-900/90 border-green-400 text-green-100 backdrop-blur-sm' 
-        : 'bg-red-900/90 border-red-400 text-red-100 backdrop-blur-sm'
-    } transform transition-all duration-300 animate-pulse min-w-[320px]`
-  },
-    React.createElement('div', {
-      className: 'flex items-center space-x-4'
+  const isSuccess = notification.type === "success";
+
+  return React.createElement(
+    "div",
+    {
+      className: `toast-enter fixed top-4 z-50 min-w-[280px] rounded-xl border px-4 py-3 shadow-xl sm:top-6 ${
+        drawerOpen
+          ? "left-1/2 -translate-x-1/2"
+          : "right-4 sm:right-6"
+      } ${
+        isSuccess
+          ? "border-emerald-500/35 bg-emerald-900/75 text-emerald-100"
+          : "border-rose-500/35 bg-rose-900/75 text-rose-100"
+      }`,
     },
-      React.createElement('span', {
-        className: 'text-2xl'
-      }, notification.type === 'success' ? '✅' : '❌'),
-      React.createElement('span', {
-        className: 'font-semibold text-lg'
-      }, notification.message)
-    )
+    React.createElement(
+      "div",
+      {
+        className: "flex items-start gap-3",
+      },
+      React.createElement(Icon, {
+        name: isSuccess ? "check" : "alert",
+        size: 16,
+        className: isSuccess ? "mt-0.5 text-emerald-300" : "mt-0.5 text-rose-300",
+      }),
+      React.createElement(
+        "div",
+        null,
+        React.createElement(
+          "p",
+          {
+            className: "text-xs font-semibold uppercase tracking-wider",
+          },
+          isSuccess ? "Success" : "Error",
+        ),
+        React.createElement(
+          "p",
+          {
+            className: "mt-1 text-sm",
+          },
+          notification.message,
+        ),
+      ),
+    ),
   );
 };

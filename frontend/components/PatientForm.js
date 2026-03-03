@@ -1,192 +1,268 @@
-// frontend/components/PatientForm.js
-const PatientForm = ({ formData, onInputChange, onSubmit, onCancel }) => {
-  return React.createElement('div', {
-    className: 'bg-slate-800/90 backdrop-blur-sm p-8 border-b border-slate-700/50'
-  },
-    React.createElement('div', {
-      className: 'max-w-7xl mx-auto'
+const PatientForm = ({ formData, fieldErrors = {}, onInputChange, onSubmit, onCancel }) => {
+  return React.createElement(
+    "div",
+    {
+      className: "form-drawer-overlay fixed inset-0 z-40",
     },
-      React.createElement('div', {
-        className: 'bg-gradient-to-br from-slate-900/90 to-slate-800/90 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-slate-700/50'
+    React.createElement("div", {
+      className: "absolute inset-0 bg-slate-950/70 backdrop-blur-[2px]",
+      onClick: onCancel,
+    }),
+    React.createElement(
+      "aside",
+      {
+        className:
+          "form-drawer-panel absolute right-0 top-0 h-full w-full max-w-2xl border-l border-slate-700/70 bg-slate-900/95 shadow-2xl",
       },
-        React.createElement('div', {
-          className: 'flex items-center mb-8 pb-6 border-b border-slate-700/50'
+      React.createElement(
+        "div",
+        {
+          className: "flex h-full flex-col",
         },
-          React.createElement('div', {
-            className: 'bg-gradient-to-br from-emerald-600 to-emerald-700 p-4 rounded-xl mr-6 shadow-lg'
+        React.createElement(
+          "div",
+          {
+            className: "border-b border-slate-700/70 px-6 py-5",
           },
-            React.createElement('span', {
-              className: 'text-3xl'
-            }, '👤')
-          ),
-          React.createElement('div', {},
-            React.createElement('h3', {
-              className: 'text-2xl font-bold text-slate-100 mb-2'
-            }, 'New Patient Registration'),
-            React.createElement('p', {
-              className: 'text-slate-400 text-lg'
-            }, 'Enter patient details for ultrasound examination')
-          )
-        ),
-        React.createElement('form', { onSubmit },
-          React.createElement('div', {
-            className: 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10'
-          },
-            // Patient Information Section
-            React.createElement(FormInput, {
-              label: 'Patient Last Name',
-              name: 'patientName',
-              value: formData.patientName,
-              onChange: onInputChange,
-              required: true,
-              icon: '👤'
-            }),
-            React.createElement(FormInput, {
-              label: 'Patient First Name',
-              name: 'patientFirstName',
-              value: formData.patientFirstName,
-              onChange: onInputChange,
-              required: true,
-              icon: '👤'
-            }),
-            React.createElement(FormInput, {
-              label: 'Middle Name',
-              name: 'patientMiddleName',
-              value: formData.patientMiddleName,
-              onChange: onInputChange,
-              icon: '👤'
-            }),
-            
-            // Demographics Section
-            React.createElement(FormInput, {
-              label: 'Birth Date',
-              type: 'date',
-              name: 'birthDate',
-              value: formData.birthDate,
-              onChange: onInputChange,
-              required: true,
-              icon: '🎂'
-            }),
-            React.createElement(FormInput, {
-              label: 'Sex',
-              type: 'select',
-              name: 'sex',
-              value: formData.sex,
-              onChange: onInputChange,
-              required: true,
-              icon: '⚧️',
-              options: [
-                { value: 'M', label: 'Male' },
-                { value: 'F', label: 'Female' },
-                { value: 'O', label: 'Other' }
-              ]
-            }),
-            React.createElement(FormInput, {
-              label: 'Patient ID',
-              name: 'patientId',
-              value: formData.patientId,
-              onChange: onInputChange,
-              placeholder: 'Auto-generated if empty',
-              icon: '🆔'
-            }),
-            
-            // Medical Information Section
-            React.createElement('div', {
-              className: 'md:col-span-2'
+          React.createElement(
+            "h3",
+            {
+              className: "text-xl font-semibold text-slate-50",
             },
+            "Schedule New Patient",
+          ),
+          React.createElement(
+            "p",
+            {
+              className: "mt-1 text-sm text-slate-400",
+            },
+            "Add patient demographics and procedure details for the worklist.",
+          ),
+        ),
+        React.createElement(
+          "form",
+          {
+            onSubmit,
+            noValidate: true,
+            className: "flex min-h-0 flex-1 flex-col",
+          },
+          React.createElement(
+            "div",
+            {
+              className: "flex-1 space-y-8 overflow-y-auto px-6 py-6",
+            },
+            React.createElement(
+              "section",
+              {
+                className: "space-y-4",
+              },
+              React.createElement(
+                "h4",
+                {
+                  className: "text-sm font-semibold uppercase tracking-[0.12em] text-cyan-300",
+                },
+                "Identity",
+              ),
+              React.createElement(
+                "div",
+                {
+                  className: "grid grid-cols-1 gap-4 sm:grid-cols-2",
+                },
+                React.createElement(FormInput, {
+                  label: "Last Name",
+                  name: "patientName",
+                  value: formData.patientName,
+                  onChange: onInputChange,
+                  required: true,
+                  error: fieldErrors.patientName,
+                }),
+                React.createElement(FormInput, {
+                  label: "First Name",
+                  name: "patientFirstName",
+                  value: formData.patientFirstName,
+                  onChange: onInputChange,
+                  required: true,
+                  error: fieldErrors.patientFirstName,
+                }),
+                React.createElement(FormInput, {
+                  label: "Middle Name",
+                  name: "patientMiddleName",
+                  value: formData.patientMiddleName,
+                  onChange: onInputChange,
+                  error: fieldErrors.patientMiddleName,
+                }),
+                React.createElement(FormInput, {
+                  label: "Patient ID",
+                  name: "patientId",
+                  value: formData.patientId,
+                  onChange: onInputChange,
+                  placeholder: "Auto-generated if empty",
+                  error: fieldErrors.patientId,
+                }),
+                React.createElement(FormInput, {
+                  label: "Birth Date",
+                  type: "date",
+                  name: "birthDate",
+                  value: formData.birthDate,
+                  onChange: onInputChange,
+                  required: true,
+                  error: fieldErrors.birthDate,
+                }),
+                React.createElement(FormInput, {
+                  label: "Sex",
+                  type: "select",
+                  name: "sex",
+                  value: formData.sex,
+                  onChange: onInputChange,
+                  required: true,
+                  error: fieldErrors.sex,
+                  options: [
+                    { value: "M", label: "Male" },
+                    { value: "F", label: "Female" },
+                    { value: "O", label: "Other" },
+                  ],
+                }),
+              ),
+            ),
+            React.createElement(
+              "section",
+              {
+                className: "space-y-4",
+              },
+              React.createElement(
+                "h4",
+                {
+                  className: "text-sm font-semibold uppercase tracking-[0.12em] text-cyan-300",
+                },
+                "Clinical",
+              ),
               React.createElement(FormInput, {
-                label: 'Procedure Description',
-                name: 'procedureDescription',
+                label: "Procedure Description",
+                name: "procedureDescription",
                 value: formData.procedureDescription,
                 onChange: onInputChange,
                 required: true,
-                placeholder: 'e.g., Thyroid US bilateral, Carotid Doppler study',
-                icon: '🔬'
-              })
+                placeholder: "e.g. Thyroid US bilateral",
+                error: fieldErrors.procedureDescription,
+              }),
+              React.createElement(
+                "div",
+                {
+                  className: "grid grid-cols-1 gap-4 sm:grid-cols-2",
+                },
+                React.createElement(FormInput, {
+                  label: "Modality",
+                  type: "select",
+                  name: "modality",
+                  value: formData.modality,
+                  onChange: onInputChange,
+                  error: fieldErrors.modality,
+                  options: [
+                    { value: "US", label: "Ultrasound" },
+                    { value: "CT", label: "CT" },
+                    { value: "MR", label: "MRI" },
+                    { value: "XR", label: "X-Ray" },
+                  ],
+                }),
+                React.createElement(FormInput, {
+                  label: "Station AET",
+                  name: "stationAET",
+                  value: formData.stationAET,
+                  onChange: onInputChange,
+                  error: fieldErrors.stationAET,
+                }),
+              ),
             ),
-            React.createElement(FormInput, {
-              label: 'Modality',
-              type: 'select',
-              name: 'modality',
-              value: formData.modality,
-              onChange: onInputChange,
-              icon: '🩺',
-              options: [
-                { value: 'US', label: 'Ultrasound' },
-                { value: 'CT', label: 'CT Scan' },
-                { value: 'MR', label: 'MRI' },
-                { value: 'XR', label: 'X-Ray' }
-              ]
-            }),
-            
-            // Scheduling Section
-            React.createElement(FormInput, {
-              label: 'Scheduled Date',
-              type: 'date',
-              name: 'scheduledDate',
-              value: formData.scheduledDate,
-              onChange: onInputChange,
-              required: true,
-              icon: '📅'
-            }),
-            React.createElement(FormInput, {
-              label: 'Scheduled Time',
-              type: 'time',
-              name: 'scheduledTime',
-              value: formData.scheduledTime,
-              onChange: onInputChange,
-              required: true,
-              icon: '⏰'
-            }),
-            
-            // Physician Information Section
-            React.createElement(FormInput, {
-              label: 'Requesting Physician',
-              name: 'requestingPhysician',
-              value: formData.requestingPhysician,
-              onChange: onInputChange,
-              placeholder: 'Dr. Smith',
-              icon: '👨‍⚕️'
-            }),
-            React.createElement(FormInput, {
-              label: 'Referring Physician',
-              name: 'referringPhysician',
-              value: formData.referringPhysician,
-              onChange: onInputChange,
-              placeholder: 'Dr. Johnson',
-              icon: '👩‍⚕️'
-            }),
-            React.createElement(FormInput, {
-              label: 'Station AET',
-              name: 'stationAET',
-              value: formData.stationAET,
-              onChange: onInputChange,
-              icon: '🖥️'
-            })
+            React.createElement(
+              "section",
+              {
+                className: "space-y-4",
+              },
+              React.createElement(
+                "h4",
+                {
+                  className: "text-sm font-semibold uppercase tracking-[0.12em] text-cyan-300",
+                },
+                "Scheduling",
+              ),
+              React.createElement(
+                "div",
+                {
+                  className: "grid grid-cols-1 gap-4 sm:grid-cols-2",
+                },
+                React.createElement(FormInput, {
+                  label: "Scheduled Date",
+                  type: "date",
+                  name: "scheduledDate",
+                  value: formData.scheduledDate,
+                  onChange: onInputChange,
+                  required: true,
+                  error: fieldErrors.scheduledDate,
+                  minDate: "today",
+                }),
+                React.createElement(FormInput, {
+                  label: "Scheduled Time",
+                  type: "time",
+                  name: "scheduledTime",
+                  value: formData.scheduledTime,
+                  onChange: onInputChange,
+                  required: true,
+                  error: fieldErrors.scheduledTime,
+                  selectedDate: formData.scheduledDate,
+                }),
+                React.createElement(FormInput, {
+                  label: "Requesting Physician",
+                  name: "requestingPhysician",
+                  value: formData.requestingPhysician,
+                  onChange: onInputChange,
+                  placeholder: "Dr. Smith",
+                  error: fieldErrors.requestingPhysician,
+                }),
+                React.createElement(FormInput, {
+                  label: "Referring Physician",
+                  name: "referringPhysician",
+                  value: formData.referringPhysician,
+                  onChange: onInputChange,
+                  placeholder: "Dr. Johnson",
+                  error: fieldErrors.referringPhysician,
+                }),
+              ),
+            ),
           ),
-          
-          // Form Actions
-          React.createElement('div', {
-            className: 'flex justify-end space-x-6 pt-8 border-t border-slate-700/50'
-          },
-            React.createElement('button', {
-              type: 'button',
-              onClick: onCancel,
-              className: 'px-8 py-4 border-2 border-slate-600 text-slate-300 bg-slate-700/50 backdrop-blur-sm rounded-xl hover:bg-slate-600/50 font-semibold transition-all duration-150 hover:scale-105 flex items-center space-x-2'
+          React.createElement(
+            "div",
+            {
+              className:
+                "border-t border-slate-700/70 bg-slate-900/95 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-slate-900/80",
             },
-              React.createElement('span', {}, '❌'),
-              React.createElement('span', {}, 'Cancel')
+            React.createElement(
+              "div",
+              {
+                className: "flex items-center justify-end gap-3",
+              },
+              React.createElement(
+                "button",
+                {
+                  type: "button",
+                  onClick: onCancel,
+                  className:
+                    "rounded-xl border border-slate-600 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors duration-150 hover:bg-slate-700",
+                },
+                "Cancel",
+              ),
+              React.createElement(
+                "button",
+                {
+                  type: "submit",
+                  className:
+                    "rounded-xl border border-cyan-400/60 bg-cyan-500 px-4 py-2 text-sm font-semibold text-slate-950 transition-colors duration-150 hover:bg-cyan-400",
+                },
+                "Create Patient",
+              ),
             ),
-            React.createElement('button', {
-              type: 'submit',
-              className: 'bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-10 py-4 rounded-xl hover:from-emerald-700 hover:to-emerald-800 font-semibold shadow-lg transform transition-all duration-150 hover:scale-105 border-2 border-emerald-500 flex items-center space-x-2'
-            },
-              React.createElement('span', {}, '💾'),
-              React.createElement('span', {}, 'Create Patient Record')
-            )
-          )
-        )
-      )
-    )
+          ),
+        ),
+      ),
+    ),
   );
 };

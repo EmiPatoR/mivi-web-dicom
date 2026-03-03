@@ -6,6 +6,17 @@ cat > docker-compose.yml << 'DOCKER_EOF'
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:15
+    container_name: worklist-db
+    environment:
+      - POSTGRES_DB=worklist
+      - POSTGRES_USER=worklist
+      - POSTGRES_PASSWORD=worklist123
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
   orthanc:
     image: orthancteam/orthanc:latest
     container_name: orthanc
@@ -31,24 +42,28 @@ services:
       - "8080:8080"  # Worklist manager web interface
     volumes:
       - ./worklists:/app/worklists  # Shared worklist directory
+    environment:
+      - DATABASE_URL=postgresql://worklist:worklist123@postgres:5432/worklist
+      - AUTO_MIGRATE=true
     depends_on:
       - orthanc
+      - postgres
     restart: unless-stopped
 
 volumes:
   orthanc-db:
+  postgres-data:
 DOCKER_EOF
 
 # Create Dockerfile for the worklist manager
 cat > Dockerfile << 'DOCKER_EOF'
 FROM denoland/deno:latest
 
-# Install dcmtk
-RUN apt-get update && apt-get install -y dcmtk && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
 # Copy application files
+COPY deno.json ./deno.json
+COPY drizzle.config.ts ./drizzle.config.ts
 COPY backend/ ./backend/
 COPY frontend/ ./frontend/
 COPY worklists/ ./worklists/
@@ -57,7 +72,7 @@ COPY worklists/ ./worklists/
 EXPOSE 8080
 
 # Run the application
-CMD ["deno", "run", "--allow-net", "--allow-read", "--allow-write", "--allow-run", "backend/server.ts"]
+CMD ["deno", "run", "--allow-net", "--allow-read", "--allow-write", "--allow-env", "backend/main.ts"]
 DOCKER_EOF
 
 echo "✅ Docker setup complete!"
